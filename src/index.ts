@@ -50,7 +50,8 @@ class Japityper extends Command {
     {
       name: "file",
       required: false,
-      description: "output file",
+      description:
+        "output file. If this is not provided, your clipboard will be overwritten with the generated code",
     },
   ];
 
@@ -102,7 +103,7 @@ class Japityper extends Command {
     if (args.file) {
       fs.writeFileSync(args.file, output);
     } else {
-      this.log(output);
+      clipboardy.writeSync(output);
     }
   }
 }
