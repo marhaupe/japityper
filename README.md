@@ -21,7 +21,7 @@ $ npm install -g japityper
 $ japityper COMMAND
 running command...
 $ japityper (-v|--version|version)
-japityper/0.0.2 darwin-x64 node-v12.16.1
+japityper/0.0.3 darwin-x64 node-v12.16.1
 $ japityper --help [COMMAND]
 USAGE
   $ japityper COMMAND

@@ -44,11 +44,21 @@ class Japityper extends Command {
       description: "root type name",
       default: "Root",
     }),
+    input: flags.string({
+      char: "i",
+      description: "input file",
+      multiple: true,
+    }),
+    "skip-deserialize": flags.boolean({
+      char: "s",
+      description: "skip deserialization",
+      default: false,
+    }),
   };
 
   static args = [
     {
-      name: "file",
+      name: "output",
       required: false,
       description:
         "output file. If this is not provided, your clipboard will be overwritten with the generated code",
@@ -57,32 +67,55 @@ class Japityper extends Command {
 
   async run() {
     const { args, flags } = this.parse(Japityper);
-    let clipboardContent = clipboardy.readSync();
-    clipboardContent = clipboardContent.trimStart();
 
-    let response: any | null = null;
+    let stringInput: string[] = [];
+    if (flags.input) {
+      try {
+        stringInput = flags.input.map((inputFile: string) =>
+          fs.readFileSync(inputFile, { encoding: "utf8" })
+        );
+      } catch (error) {
+        this.error("reading input files failed. " + error.message);
+      }
+    } else {
+      let clipboardContent = clipboardy.readSync();
+      clipboardContent = clipboardContent.trimStart();
+      stringInput = [clipboardContent];
+    }
+
+    let parsedStringInput: any[] = [];
     try {
-      response = JSON.parse(clipboardContent);
+      parsedStringInput = stringInput.map((i) => JSON.parse(i));
     } catch (error) {
-      this.error("parsing clipboard content failed. " + error.message);
+      this.error("parsing data failed. " + error.message);
     }
 
     const deserializer = new Deserializer({
       keyForAttribute: (key: string) => key,
     });
 
-    let deserializedInput: any | null = null;
-    try {
-      deserializedInput = deserializer.deserialize(response);
-    } catch (error) {
-      this.error("deserializing failed. " + error.message);
+    let deserializedInput: any[] = [];
+    if (flags["skip-deserialize"]) {
+      deserializedInput = parsedStringInput;
+    } else {
+      try {
+        deserializedInput = parsedStringInput.map((i) =>
+          deserializer.deserialize(i)
+        );
+      } catch (error) {
+        this.error("deserializing failed. " + error.message);
+      }
     }
+
+    const stringifiedDeserializedInput = deserializedInput.map((i) =>
+      JSON.stringify(i)
+    );
 
     const jsonInput = jsonInputForTargetLanguage(flags.language);
 
     await jsonInput.addSource({
       name: flags["root-type"],
-      samples: [JSON.stringify(deserializedInput)],
+      samples: stringifiedDeserializedInput,
     });
 
     const inputData = new InputData();
